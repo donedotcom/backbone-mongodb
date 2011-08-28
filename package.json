@@ -1,0 +1,15 @@
+{
+  "name": "backbone-mongodb",
+  "version": "0.0.1",
+  "description": "Extensions to Backbone.js to support MongoDB use as a back-end data store.",
+  "main" : "./backbone-mongodb.js",
+  "keywords": [
+    "backbone",
+    "mongodb" 
+  ],
+  "dependencies": {
+    "backbone": "0.5.x",
+    "underscore": "1.1.x",
+    "node-mongodb-native", "0.9.x",  
+  },
+}
