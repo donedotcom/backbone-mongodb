@@ -14,11 +14,13 @@ Co-exists with Backbone Models, which remain unchanged.
 
 When loaded on a node.js server (where node-mongodb-native is available), provides:
 
-1.  support for properly saving updates to embedded documents
+1. Ordering of save, fetch, and delete methods to follow the standard node callback pattern: callback(err, response)
+2. support for loading and saving to the mongodb
+3. support for properly saving updates to embedded documents
 
 # Client Side
 
 When loaded on the browser, provides:
 
-1.  Support for sending partial updates of embedded documents to the server
+1.  Support for sending partial updates of documents and embedded documents to the server
 

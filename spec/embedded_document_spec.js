@@ -6,7 +6,7 @@ var assert = require('assert'),
 
 var TestDocument = Backbone.Document.extend({collectionName: 'TestDocument'});
 
-vows.describe('Document').addBatch({
+vows.describe('EmbeddedDocument').addBatch({
 
 // Set up the database
 // -------------------
@@ -19,50 +19,54 @@ vows.describe('Document').addBatch({
     }
   }
 
-// Saving documents
-// ----------------
+// Saving embedded documents
+// -------------------------
 
 }).addBatch({
   'an unsaved Document': {
-    topic: new TestDocument(),
-    'is new': function(document) {
-      assert.isTrue(document.isNew());
+    topic: function() {
+      var document = new TestDocument();
+      var eDocument = new Backbone.EmbeddedDocument(document);
+      this.callback(null, eDocument);
+    },
+    'is new': function(eDocument) {
+      assert.isTrue(eDocument.parent.isNew());
     },
     'when saved': {
-      topic: function(document) {
-        document.save({}, this.callback);
+      topic: function(eDocument) {
+        eDocument.save({}, this.callback);
       },
-      'is not new': function(err, document) {
-        assert.isFalse(document.isNew());
+      'is not new': function(err, eDocument) {
+        assert.isFalse(eDocument.parent.isNew());
       },      
-      'has assigned the id': function(err, document) {
-        assert.ok(document.id);
+      'has assigned the id': function(err, eDocument) {
+        assert.ok(eDocument.parent.id);
       },
     },
     'when updated inside save': {
-      topic: function(document) {
-        document.save({spaceMonkeyCaptain: true}, this.callback);
+      topic: function(eDocument) {
+        eDocument.save({spaceMonkeyCaptain: true}, this.callback);
       },
-      'has parameter saved': function(err, document) {
+      'has parameter saved': function(err, eDocument) {
         assert.isNull(err);
-        assert.isTrue(document.get('spaceMonkeyCaptain'));
+        assert.isTrue(eDocument.get('spaceMonkeyCaptain'));
       }
     },
     'when updated': {
-      topic: function(document) {
-        document.set({spaceMonkeyTrainee: true});
-        document.save({}, this.callback);
+      topic: function(eDocument) {
+        eDocument.set({spaceMonkeyTrainee: true});
+        eDocument.save({}, this.callback);
       },
-      'has parameter saved': function(err, document) {
+      'has parameter saved': function(err, eDocument) {
         assert.isNull(err);
-        assert.isTrue(document.get('spaceMonkeyTrainee'));
+        assert.isTrue(eDocument.get('spaceMonkeyTrainee'));
       }
     }
   }
   
 // Fetching documents
 // ------------------
-
+/*
 }).addBatch({
   'an existing document': {
     topic: function() {
@@ -119,4 +123,11 @@ vows.describe('Document').addBatch({
       }
     }
   }
+  */
+  
+// Embedded Document Collections
+// -----------------------------
+
+// TODO
+
 }).export(module);

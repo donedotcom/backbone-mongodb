@@ -5,11 +5,11 @@
   "main" : "./backbone-mongodb.js",
   "keywords": [
     "backbone",
-    "mongodb" 
+    "mongodb"
   ],
   "dependencies": {
     "backbone": "0.5.x",
     "underscore": "1.1.x",
-    "node-mongodb-native", "0.9.x",  
-  },
+    "mongodb": "0.9.x"
+  }
 }
