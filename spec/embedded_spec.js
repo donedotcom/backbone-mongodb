@@ -112,5 +112,64 @@ vows.describe('Embedded Document').addBatch({
       }
     }
   }
+
+// Saving from the sub-model
+// -------------------------
+
+}).addBatch({ 
+  'document attribute with a model': {
+    topic: new TestDocument(),  
+    'save from the attribute model': {
+      topic: function(document) {
+        document.set({ monkey: new Monkey({ name: 'Super Monkey' }) });
+        document.get('monkey').save({ name: 'Lame Monkey' }, this.callback);
+      },
+      'has the right type': function(err, document) {
+        assert.isTrue(document instanceof Monkey);
+      },
+      'has correct value': function(err, document) {
+        assert.equal(document.get('name'), 'Lame Monkey');
+      },
+    }
+  }
+  
+// Fetching a sub-model
+// --------------------
+
+}).addBatch({ 
+  'document attribute with a model': {
+    topic: new TestDocument(),  
+    'fetch from the attribute model': {
+      topic: function(document) {
+        document.set({ monkey: new Monkey({ name: 'Super Monkey' }) });
+        document.get('monkey').save({ name: 'Lame Monkey' }, function(err, monkey) {
+          monkey.set( { name: 'Another Monkey' });
+          monkey.fetch(this.callback);
+        }.bind(this));
+      },
+      'should cause an error': function(err, document) {
+        assert.equal(err, "Must call fetch on the root document");
+      },
+    }
+  }
+
+
+// Removing a sub-model
+// --------------------
+
+}).addBatch({ 
+  'document attribute with a model': {
+    topic: new TestDocument(),  
+    'destroy from the attribute model': {
+      topic: function(document) {
+        document.set({ monkey: new Monkey({ name: 'Super Monkey' }) });
+        document.get('monkey').destroy(this.callback);
+      },
+      'should cause an error': function(err, document) {
+        assert.equal(err, "Must call destroy on the root document");
+      },
+    }
+  }
+
   
 }).export(module);

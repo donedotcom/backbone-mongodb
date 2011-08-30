@@ -51,22 +51,38 @@
       },
       
       fetch : function(callback) {
-        return (this.sync || MongoDb.sync).call(this, 'read', this, callback);
+        if (this.container) {
+          return callback('Must call fetch on the root document', this);
+        } else {
+          return (this.sync || MongoDb.sync).call(this, 'read', this, callback);
+        }
       },
       
       save : function(attrs, callback) {
-        var method = this.isNew() ? 'create' : 'update'; // Note: isNew() is using .id instead of idAttribute        
+        var model = this;
+            root = this;
+
+        while (root.container) { root = root.container; }
+        
+        var method = root.isNew() ? 'create' : 'update';
+
         var options = {
           error: function(model, error, options) { callback(error, model); }
         };
 
-        if (attrs && !this.set(attrs, options)) return this;  
-        if (this.validate && !this._performValidation(this.attributes, options)) return this;
+        if (attrs && !model.set(attrs, options)) return model;  
+        if (model.validate && !model._performValidation(model.attributes, options)) return model;
                 
-        return (this.sync || MongoDb.sync).call(this, method, this, callback);
+        return (root.sync || MongoDb.sync).call(root, method, root, function(err, rootDb) {
+          callback(err, model);
+        });
       },
       
       destroy : function(callback) {
+        if (this.container) {
+          return callback('Must call destroy on the root document', this);
+        }
+        
         if (this.isNew()) return this.trigger('destroy', this, this.collection, {});
 
         var model = this;
@@ -197,20 +213,22 @@
   // MongoDb sync
   // ------------
   MongoDb.sync = function(method, model, callback) {
-    if(!model.collectionName) {
-      return callback('A collection name must be specified for sync', this);
+    var root = model;
+
+    if(!root.collectionName) {
+      return callback('A collection name must be specified at the root for sync', this);
     }
 
-    this.db.collection(model.collectionName, function(err, collection) {
-      if(err) { return callback(err); }
+    this.db.collection(root.collectionName, function(err, collection) {
+      if (err) { return callback(err); }
       
       switch(method) {
-        case 'read':
-          collection.findOne({ _id: model.id }, function(err, dbModel) {
+        case 'read':          
+          collection.findOne({ _id: root.id }, function(err, dbModel) {
             if (!dbModel) {
-              err = 'Could not find id ' + model.id;
+              err = 'Could not find id ' + root.id;
             } else if(!err) {
-              model.set(dbModel);            
+              root.set(dbModel);            
             }
             callback(err, model);
           });
@@ -218,18 +236,18 @@
         case 'create':
           collection.insert(model._cleanAttributes(), function(err, dbModel) {
             if(!err) {
-              model.set(dbModel[0]);
+              root.set(dbModel[0]);
             }
             callback(err, model);
           });
           break
         case 'update':
-          collection.update({ _id: model.id }, model._cleanAttributes(), function(err) {
+          collection.update({ _id: root.id }, root._cleanAttributes(), function(err) {
             callback(err, model);
           });
           break;
         case 'delete':
-          collection.remove({ _id: model.id }, function(err, result) {
+          collection.remove({ _id: root.id }, function(err, result) {
             callback(err);
           });
           break;
