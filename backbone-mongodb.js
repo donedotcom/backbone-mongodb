@@ -56,7 +56,12 @@
       
       save : function(attrs, callback) {
         var method = this.isNew() ? 'create' : 'update'; // Note: isNew() is using .id instead of idAttribute        
-        if (attrs && !this.set(attrs)) return false;
+        var options = {
+          error: function(model, error, options) { callback(error, model); }
+        };
+
+        if (attrs && !this.set(attrs, options)) return this;  
+        if (this.validate && !this._performValidation(this.attributes, options)) return this;
                 
         return (this.sync || MongoDb.sync).call(this, method, this, callback);
       },
@@ -72,14 +77,55 @@
         return this._cleanAttributes();
       },
       
+      // Marshall all the errors into one object and send them back together
+      _performValidation : function(attrs, options) {
+        var errors = {},
+            cb = options.error;
+        
+        _.each(_.keys(attrs), function(attr) {
+          var modelErrors = {};
+          options.error = function(model, error, options) {
+            _.extend(modelErrors, error);
+          };
+          
+          if(this._isModel(attr)) {
+            var model = attrs[attr];
+            if(model.validate) {
+              model._performValidation(model.attributes, options);
+            }
+          }
+          
+          if(_.keys(modelErrors).length) {
+            errors[attr] = modelErrors;
+          }          
+        }.bind(this));
+        
+        options.error = function(model, error, options) {
+          _.extend(errors, error);
+        }
+        
+        Backbone.Model.prototype._performValidation.call(this, attrs, options);
+        
+        if(_.keys(errors).length) {          
+          if(cb) {
+            cb(this, errors, options);
+          } else {
+            this.trigger('error', this, errors, options);
+          }
+          return false;
+        }
+        return true;
+      },
+      
       _isModel : function(attr) {
         return attr in this.models;
       },
       
+      // Create models for attributes that have one defined, and update the container
       _prepareModels : function(attrs) {
         _.each(_.keys(this.models), function(attr) {
           var value = attrs[attr];
-          
+                    
           if(!(value instanceof Backbone.Model)) {
             attrs[attr] = new this.models[attr](attrs[attr], { container: this });
           } else {
@@ -211,8 +257,7 @@
         }
       }.bind(this));
     }).call(MongoDb);
-  }  
-  
+  } 
     
   // Patch Backbone
   // --------------
