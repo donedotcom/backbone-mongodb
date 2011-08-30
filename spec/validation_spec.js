@@ -71,7 +71,7 @@ vows.describe('Validation').addBatch({
     },
     'when valid': {
       topic: function(document) {
-        document.save({ name: 'Dox', monkey : { name: 'Super Monkey' } }, this.callback);
+        document.save({ name: 'Dox' }, this.callback);
       },
       'should not have an error': function(err, document) {
         assert.isNull(err);
@@ -90,8 +90,7 @@ vows.describe('Validation').addBatch({
     },
     'when embedded value is not valid': { 
       topic: function(document) {
-        document.set({ monkey: { } });
-        document.save(null, this.callback);
+        document.save({ monkey: {} }, this.callback);
       },
       'should have an error': function(err, document) {
         assert.ok(err);

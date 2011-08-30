@@ -90,7 +90,7 @@
           
           if(this._isModel(attr)) {
             var model = attrs[attr];
-            if(model.validate) {
+            if(model && model.validate) {
               model._performValidation(model.attributes, options);
             }
           }
@@ -123,13 +123,15 @@
       
       // Create models for attributes that have one defined, and update the container
       _prepareModels : function(attrs) {
-        _.each(_.keys(this.models), function(attr) {
+        _.each(_.keys(attrs), function(attr) {
           var value = attrs[attr];
-                    
-          if(!(value instanceof Backbone.Model)) {
-            attrs[attr] = new this.models[attr](attrs[attr], { container: this });
-          } else {
-            value.container = this;
+          
+          if(attr in this.models) {
+            if(!(value instanceof Backbone.Model)) {
+              attrs[attr] = new this.models[attr](value, { container: this });
+            } else {
+              value.container = this;
+            }
           }
         }.bind(this));
       },
@@ -140,7 +142,7 @@
         
         _.each(_.keys(attributes), function(attr) {
           var value = attributes[attr];
-          if(value.attributes) {
+          if(value && value.attributes) {
             value = this._cleanAttributes(value.attributes);
           }
           attributes[attr] = value;
