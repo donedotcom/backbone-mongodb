@@ -60,9 +60,7 @@
       
       save : function(attrs, callback) {
         var model = this;
-            root = this;
-
-        while (root.container) { root = root.container; }
+            root = this._findRoot(this);
         
         var method = root.isNew() ? 'create' : 'update';
 
@@ -166,6 +164,12 @@
         return attributes;
       },
       
+      _findRoot : function(model) {
+        var root = model;
+        while (root.container) { root = root.container; }
+        return root;
+      },
+
     }),
     
   };
