@@ -66,7 +66,11 @@
 
         var model = this;
         return (this.sync || MongoDb.sync).call(this, 'delete', this, callback);
-      },      
+      },    
+      
+      toJSON : function() {
+        return this._cleanAttributes();
+      },
       
       _isModel : function(attr) {
         return attr in this.models;
