@@ -7,10 +7,15 @@
   var root = this;
   
   // Require Backbone and Underscore if we're on the server, and it's not already present
+  var isServer = (typeof require !== 'undefined');
+  
   var Backbone = root.Backbone;
   var _ = root._;
-  if(!Backbone && (typeof require !== 'undefined')) Backbone = require('backbone');
-  if (!_ && (typeof require !== 'undefined')) _ = require('underscore')._;
+  
+  if(isServer) {
+    if(!Backbone) Backbone = require('backbone');
+    if (!_) _ = require('underscore')._;
+  }
   
   var MongoDb = {};
   
@@ -28,7 +33,7 @@
     },
     
   };
-  
+    
   // MongoDb models
   // --------------  
   MongoDb.models = {
@@ -50,42 +55,108 @@
         return Backbone.Model.prototype.set.call(this, attrs, options);
       },
       
-      fetch : function(callback) {
-        if (this.container) {
-          return callback('Must call fetch on the root document', this);
+      fetch : (function() {
+        var rootOnlyError = 'Must call fetch on the root document';
+        
+        if (isServer) {
+          
+          // Fetch function for the server
+          // -----------------------------
+          
+          return function(callback) {
+            if (this.container) {
+              return callback(rootOnlyError, this);
+            } else {
+              return (this.sync || MongoDb.sync).call(this, 'read', this, callback);
+            }
+          };
+          
         } else {
-          return (this.sync || MongoDb.sync).call(this, 'read', this, callback);
+          
+          // Fetch function for the client
+          // -----------------------------
+          
+          return function(options) {
+            if (this.container) {
+              return wrapError(options.error, this, options)(rootOnlyError);
+            }
+            return Backbone.Model.prototype.fetch.call(this, options);
+          };
+          
         }
-      },
-      
-      save : function(attrs, callback) {
-        var model = this;
-            root = this._findRoot(this);
-        
-        var method = root.isNew() ? 'create' : 'update';
-
-        var options = {
-          error: function(model, error, options) { callback(error, model); }
-        };
-
-        if (attrs && !model.set(attrs, options)) return model;  
-        if (model.validate && !model._performValidation(model.attributes, options)) return model;
+      })(),
                 
-        return (root.sync || MongoDb.sync).call(root, method, root, function(err, rootDb) {
-          callback(err, model);
-        });
-      },
-      
-      destroy : function(callback) {
-        if (this.container) {
-          return callback('Must call destroy on the root document', this);
-        }
+      save : (function() {
         
-        if (this.isNew()) return this.trigger('destroy', this, this.collection, {});
+        if(isServer) {
+          
+          // Save function for the server
+          // ----------------------------
+          
+          return function(attrs, callback) {
+            var model = this;
+                root = this._findRoot(this);
+        
+            var method = root.isNew() ? 'create' : 'update';
 
-        var model = this;
-        return (this.sync || MongoDb.sync).call(this, 'delete', this, callback);
-      },    
+            var options = {
+              error: function(model, error, options) { callback(error, model); }
+            };
+
+            if (attrs && !model.set(attrs, options)) return model;  
+            if (model.validate && !model._performValidation(model.attributes, options)) return model;
+                
+            return (root.sync || MongoDb.sync).call(root, method, root, function(err, rootDb) {
+              callback(err, model);
+            });
+          };
+          
+        } else {
+          
+          // Save function for the client
+          // ----------------------------
+          
+          return function(attrs, options) {
+            var root = this._findRoot(this);
+            return Backbone.Model.prototype.save.call(root, attrs, options);
+          };
+          
+        }
+      })(),
+      
+      destroy : (function() {
+        var rootOnlyError = 'Must call destroy on the root document';
+        
+        if (isServer) {
+          
+          // Destroy function for the server
+          // -------------------------------
+          
+          return function(callback) {
+            if (this.container) {
+              return callback(rootOnlyError, this);
+            }
+        
+            if (this.isNew()) return this.trigger('destroy', this, this.collection, {});
+
+            var model = this;
+            return (this.sync || MongoDb.sync).call(this, 'delete', this, callback);
+          };
+          
+        } else {
+          
+          // Destroy function for the client
+          // -------------------------------
+          
+          return function(options) {
+            if (this.container) {
+              return wrapError(options.error, this, options)(rootOnlyError);
+            }
+            return Backbone.Model.prototype.destroy.call(this, options);
+          };
+          
+        }
+      })(),              
       
       toJSON : function() {
         return this._cleanAttributes();
