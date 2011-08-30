@@ -35,61 +35,69 @@
 
     Document: Backbone.Model.extend({
       idAttribute: '_id',  // provides the mongo _id for documents
+      models: {},          // mapping of attributes to models (optional)
       
-      fetch: function(callback) {
+      initialize : function(attributes, options) {
+        if (options && options.container) {
+          // Crashes
+          this.container = options.container;
+        }
+      },
+      
+      set : function(attrs, options) {    
+        // Create any sub-models
+        this._prepareModels(attrs);
+        return Backbone.Model.prototype.set.call(this, attrs, options);
+      },
+      
+      fetch : function(callback) {
         return (this.sync || MongoDb.sync).call(this, 'read', this, callback);
       },
       
-      save: function(attrs, callback) {
-        var method = this.isNew() ? 'create' : 'update'; // Note: isNew() is using .id instead of idAttribute
+      save : function(attrs, callback) {
+        var method = this.isNew() ? 'create' : 'update'; // Note: isNew() is using .id instead of idAttribute        
         if (attrs && !this.set(attrs)) return false;
-        
+                
         return (this.sync || MongoDb.sync).call(this, method, this, callback);
       },
       
-      destroy: function(callback) {
+      destroy : function(callback) {
         if (this.isNew()) return this.trigger('destroy', this, this.collection, {});
 
         var model = this;
         return (this.sync || MongoDb.sync).call(this, 'delete', this, callback);
       },      
-    }),
-    
-    EmbeddedDocument: Backbone.Model.extend({
-      idAttribute: '_id',  // should be overridden for embedded documents that use their own ID type
       
-      initialize: function(parent, attributes) {
-        attributes = attributes || {};
+      _isModel : function(attr) {
+        return attr in this.models;
+      },
+      
+      _prepareModels : function(attrs) {
+        _.each(_.keys(this.models), function(attr) {
+          var value = attrs[attr];
+          
+          if(!(value instanceof Backbone.Model)) {
+            attrs[attr] = new this.models[attr](attrs[attr], { container: this });
+          } else {
+            value.container = this;
+          }
+        }.bind(this));
+      },
+      
+      // Recursively strip the sub-models out of the attributes so that they can be saved without circular references
+      _cleanAttributes : function(attributes) {
+        attributes = attributes || _.clone(this.attributes);
         
-        this.parent = parent;
-        this.set(attributes);
+        _.each(_.keys(attributes), function(attr) {
+          var value = attributes[attr];
+          if(value.attributes) {
+            value = this._cleanAttributes(value.attributes);
+          }
+          attributes[attr] = value;
+        }.bind(this));
+        return attributes;
       },
       
-      fetch: function(callback) {
-        var model = this,
-            document = parentDocument(model);
-            
-        if(!document) { return callback("No parent document", null); }
-
-        parentDocument.fetch(function(err, parent) {
-          callback(err, model);
-        });
-      },
-      
-      save: function(attrs, callback) {
-        var model = this;
-            document = parentDocument(model);
-
-        if(!document) { return callback("No parent document", null); }
-
-        if (attrs && !this.set(attrs)) return false;
-        document.save({}, function(err, parent) {
-          callback(err, model);
-        });
-      },
-      
-      destroy: function(callback) {
-      },   
     }),
     
   };
@@ -156,7 +164,7 @@
           });
           break;
         case 'create':
-          collection.insert(model.attributes, function(err, dbModel) {
+          collection.insert(model._cleanAttributes(), function(err, dbModel) {
             if(!err) {
               model.set(dbModel[0]);
             }
@@ -164,7 +172,7 @@
           });
           break
         case 'update':
-          collection.update({ _id: model.id }, model.attributes, function(err) {
+          collection.update({ _id: model.id }, model._cleanAttributes(), function(err) {
             callback(err, model);
           });
           break;
@@ -201,19 +209,6 @@
     }).call(MongoDb);
   }  
   
-  // Utility Functions
-  // -----------------
-  var parentDocument = function(embeddedDocument) {
-    if(embeddedDocument instanceof MongoDb.models.Document) {
-      return embeddedDocument;
-    }
-    
-    if(embeddedDocument.parent) {
-      return parentDocument(embeddedDocument.parent);
-    }
-    
-    return null;
-  }
     
   // Patch Backbone
   // --------------
