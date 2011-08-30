@@ -265,23 +265,6 @@
       },
       
     }),
-    
-    EmbeddedDocumentCollection: Backbone.Collection.extend({
-      model: MongoDb.models.EmbeddedDocument,
-      
-      fetch: function(options) {
-        this.__super__.fetch(options);
-      },
-      
-      create: function(model, options) {
-        this.__super__.create(model, options);
-      },
-      
-      remove: function(models, options) {
-        this.__super__.remove(models, options);        
-      },
-      
-    }),
       
   };
   
