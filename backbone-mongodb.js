@@ -41,31 +41,7 @@
         return value;
       }
     }),
-  },
-
-  // MongoDb collections
-  // -------------------
-  MongoDb.collections = {
-    
-    DocumentCollection: Backbone.Collection.extend({
-      model: MongoDb.models.Document,
-      
-      fetch: function(options) {
-        this.__super__.fetch(options);
-      },
-      
-      create: function(model, options) {
-        this.__super__.create(model, options);
-      },
-      
-      remove: function(models, options) {
-        this.__super__.remove(models, options);        
-      },
-      
-    }),
-      
-  };
-  
+  },  
       
   // Patch Backbone
   // --------------
@@ -78,6 +54,5 @@
   
   Backbone.MongoDb = MongoDb;
   _.extend(Backbone, MongoDb.models);
-  _.extend(Backbone, MongoDb.collections);
-  
+    
 }).call(this);

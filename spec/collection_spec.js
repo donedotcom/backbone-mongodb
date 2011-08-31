@@ -5,7 +5,19 @@ var assert = require('assert'),
     BackboneMongoDb = require('../backbone-mongodb'),
     Backbone = require('backbone');
 
-vows.describe('Validation').addBatch({
+var Monkey = Backbone.Document.extend({ 
+});
+    
+var MonkeyCollection = Backbone.Collection.extend({
+  model : Monkey,
+});
+
+var Document = Backbone.Document.extend({
+  collectionName: 'document',
+  models : { 'monkeys': MonkeyCollection },
+});
+
+vows.describe('Collection').addBatch({
 
 // Set up the database
 // -------------------
@@ -18,9 +30,23 @@ vows.describe('Validation').addBatch({
     }
   }
 
-// Validate XXX
+// Validate object type assignment
 // -------------------------------
-
 }).addBatch({
+  'a new document with monkeys': {
+    topic: function() {
+      var document = new Document({ monkeys: [ { name: 'Monkey 1' }, { name : 'Monkey 2' } ] });
+      document.save(null, this.callback);
+    },
+    'should have a monkey collection': function(err, document) {
+      assert.isTrue(document.get('monkeys') instanceof MonkeyCollection);
+    },
+    'monkey collection should have monkeys': function(err, document) {
+      assert.isTrue(document.get('monkeys').at(0) instanceof Monkey);
+    },
+    'monkey in collection should be the right monkey': function(err, document) {
+      assert.equal(document.get('monkeys').at(0).get('name'), 'Monkey 1');
+    }
+  }
 
 }).export(module);
