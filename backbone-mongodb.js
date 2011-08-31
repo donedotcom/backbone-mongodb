@@ -11,12 +11,11 @@
   
   var Backbone = root.Backbone;
   var _ = root._;
+  var MongoDBDocument;
   
-  if(isServer) {
-    Backbone = require('backbone');
-    _ = require('underscore');
-  }
-
+  if (!Backbone && isServer) Backbone = require('backbone');
+  if (!_ && isServer) _ = require('underscore');
+  
   var MongoDb = {};
 
   // MongoDb models
@@ -41,14 +40,14 @@
         return value;
       }
     }),
-  },  
+  };
       
   // Patch Backbone
   // --------------
+  
+  // Add mongoDB behavior to the Document
   if (isServer) {
     var MongoDBDocument = require('./lib/mongodb-document');
-
-    // Add mongoDB behavior to the Document
     _.extend(MongoDb.models.Document.prototype, MongoDBDocument);
   }
   
