@@ -47,8 +47,10 @@
   
   // Add mongoDB behavior to the Document
   if (isServer) {
+    /*
     var MongoDBDocument = require('./lib/mongodb-document');
     _.extend(MongoDb.models.Document.prototype, MongoDBDocument);
+    */
   }
   
   Backbone.MongoDb = MongoDb;
