@@ -1,11 +1,21 @@
-var Backbone = require('backbone'),
-    BackboneMongoDb = require('../backbone-mongodb');
+var Db = require('../lib/db');
+
+var _connection = null;
+
+var database = new Db({
+  name: 'test',
+  host: '127.0.0.1',
+  port: 27017
+});
     
 exports.db = function(callback) {
-  if (Backbone.MongoDb.db) { return callback(null, Backbone.MongoDb.db); }
+  if (_connection) { 
+    return callback(null, _connection);
+  }
   
-  Backbone.MongoDb.bind('database', function(status) {
+  database.on('database', function(status) {
     var error = status === 'open' ? null : status;
-    callback(error, Backbone.MongoDb.db);
+    _connection = Db.getConnection();
+    callback(error, _connection);    
   });
 }

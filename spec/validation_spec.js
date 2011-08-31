@@ -5,16 +5,7 @@ var assert = require('assert'),
     BackboneMongoDb = require('../backbone-mongodb'),
     Backbone = require('backbone');
 
-var Monkey = Backbone.Document.extend({
-  validate : function(attrs) {
-    var errors = {};
-    
-    if (!attrs.name || attrs.name.length === 0) { 
-      errors.name = 'Monkeys must have a name';
-    }
-    return _.keys(errors).length === 0 ? null : errors;
-  }
-});
+var Monkey = Backbone.Document.extend({});
 
 var TestDocument = Backbone.Document.extend({
   collectionName: 'TestDocument',
@@ -24,6 +15,13 @@ var TestDocument = Backbone.Document.extend({
 
     if (!attrs.name || attrs.name.length === 0) { 
       errors.name = 'Document name must not be blank';
+    }
+    
+    if(attrs.monkey) {
+      if(!attrs.monkey.name || attrs.monkey.name.length === 0) {
+        errors.monkey = {};
+        errors.monkey.name = "Monkeys must have a name";
+      }
     }
     return _.keys(errors).length === 0 ? null : errors;
   }
